@@ -129,3 +129,38 @@ func profaneReplace(msg string, profaneWords map[string]struct{}) string {
 	cleaned := strings.Join(words, " ")
 	return cleaned
 }
+
+func (cfg *apiConfig) deleteChirpsHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, "invalid or missing token", err)
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, cfg.SECRET)
+	if err != nil {
+		respondWithError(w, 401, "invalid or expired token", err)
+		return
+	}
+	chirpIDStr := r.PathValue("chirpID")
+	chirpID, err := uuid.Parse(chirpIDStr)
+	if err != nil {
+		respondWithError(w, 400, "invalid chirp ID", err)
+		return
+	}
+	chirp, err := cfg.dbQueries.GetChirp(r.Context(), chirpID)
+	if err != nil {
+		respondWithError(w, 404, "chirp not found", err)
+		return
+	}
+	if userID != chirp.UserID {
+		respondWithError(w, 403, "cannot delete chirp", nil)
+		return
+	}
+	err = cfg.dbQueries.DeleteChirp(r.Context(), chirpID)
+	if err != nil {
+		respondWithError(w, 404, "cannot delete chirp", err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
