@@ -2,18 +2,30 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/Throne-of-Doom/chirpy/internal/auth"
 	"github.com/Throne-of-Doom/chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
 func (cfg *apiConfig) createChirpsHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, "invalid or missing token", err)
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, cfg.SECRET)
+	if err != nil {
+		respondWithError(w, 401, "invalid or expired token", err)
+		return
+	}
 	type data struct {
-		Body   string    `json:"body"`
-		UserID uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
 	}
 	profaneWords := map[string]struct{}{
 		"kerfuffle": {},
@@ -22,13 +34,14 @@ func (cfg *apiConfig) createChirpsHandler(w http.ResponseWriter, r *http.Request
 	}
 	decoder := json.NewDecoder(r.Body)
 	params := data{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		respondWithError(w, 500, "couldn't decode parameters", err)
 		return
 	}
 	if len(params.Body) > 140 {
-		respondWithError(w, 400, "Chirp is too long, Limit 140 Characters", nil)
+		err := errors.New("chirp is too long, limit 140 characters")
+		respondWithError(w, 400, "Chirp is too long, Limit 140 Characters", err)
 		return
 	}
 
@@ -36,7 +49,7 @@ func (cfg *apiConfig) createChirpsHandler(w http.ResponseWriter, r *http.Request
 
 	dbChirp, err := cfg.dbQueries.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   cleaned,
-		UserID: params.UserID,
+		UserID: userID,
 	})
 	if err != nil {
 		respondWithError(w, 500, "couldn't call database", err)

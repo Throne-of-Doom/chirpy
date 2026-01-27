@@ -5,10 +5,8 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/Throne-of-Doom/chirpy/internal/database"
-	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -16,18 +14,6 @@ import (
 const filepathRoot = "."
 
 var apiCFG = &apiConfig{}
-
-type CredentialsRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-type user struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-}
 
 func main() {
 	err := godotenv.Load()
@@ -46,8 +32,10 @@ func main() {
 	if platform == "" {
 		log.Fatal("PLATFORM must be set")
 	}
+	secret := os.Getenv("SECRET")
 	apiCFG.dbQueries = dbQueries
 	apiCFG.PLATFORM = platform
+	apiCFG.SECRET = secret
 	mux := http.NewServeMux()
 	mux.Handle("/app/", apiCFG.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
 	mux.HandleFunc("GET /api/healthz", readinessHandler)
@@ -58,6 +46,9 @@ func main() {
 	mux.HandleFunc("POST /api/users", apiCFG.createUserHandler)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCFG.getChirpHandler)
 	mux.HandleFunc("POST /api/login", apiCFG.loginHandler)
+	mux.HandleFunc("POST /api/refresh", apiCFG.refreshHandler)
+	mux.HandleFunc("POST /api/revoke", apiCFG.revokeHandler)
+	mux.HandleFunc("PUT /api/users", apiCFG.UpdateUserHandler)
 
 	srv := &http.Server{
 		Addr:    ":8080",

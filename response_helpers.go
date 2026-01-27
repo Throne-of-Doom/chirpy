@@ -12,7 +12,11 @@ func respondWithError(w http.ResponseWriter, code int, msg string, err error) {
 	json.NewEncoder(w).Encode(struct {
 		Error string `json:"error"`
 	}{Error: msg})
-	log.Printf("An error has occured: %s, %s", err, msg)
+	if err != nil {
+		log.Printf("An error has occured: %v, %s", err, msg)
+	} else {
+		log.Printf("An error has occured: %s", msg)
+	}
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
