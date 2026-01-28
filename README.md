@@ -68,30 +68,30 @@ POLKA_KEY=your-polka-webhook-api-key
 ### Installation
 
 1. Clone the repository:
-```bash
-git clone https://github.com/Throne-of-Doom/chirpy.git
-cd chirpy
-```
+   ```bash
+   git clone https://github.com/Throne-of-Doom/chirpy.git
+   cd chirpy
+   ```
 
 2. Install dependencies:
-```bash
-go mod download
-```
+   ```bash
+   go mod download
+   ```
 
 3. Run database migrations:
-```bash
-# Apply schema migrations from sql/schema/
-```
+   ```bash
+   # Apply schema migrations from sql/schema/
+   ```
 
 4. Generate database code with sqlc:
-```bash
-sqlc generate
-```
+   ```bash
+   sqlc generate
+   ```
 
 5. Run the server:
-```bash
-go run .
-```
+   ```bash
+   go run .
+   ```
 
 The server will start on `http://localhost:8080`.
 
@@ -144,3 +144,4 @@ This project is part of the Boot.dev curriculum.
 ## Author
 
 Throne-of-Doom
+
