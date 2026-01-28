@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -80,16 +81,44 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, 500, "an error has occured", err)
 		return
 	}
+	urlSort := ""
+	authorIDStr := r.URL.Query().Get("author_id")
+	urlSort = r.URL.Query().Get("sort")
+	var authorUUID uuid.UUID
+	var filterByAuthor bool = false
 
-	responseChirps := make([]ChirpResponse, len(chirps))
-	for i, chirp := range chirps {
-		responseChirps[i] = ChirpResponse{
+	if authorIDStr != "" {
+		authorUUID, err = uuid.Parse(authorIDStr)
+
+		if err != nil {
+			respondWithError(w, 400, "Invalid author_id", err)
+			return
+		}
+		filterByAuthor = true
+	}
+
+	responseChirps := []ChirpResponse{}
+
+	for _, chirp := range chirps {
+		if filterByAuthor && chirp.UserID != authorUUID {
+			continue
+		}
+		responseChirps = append(responseChirps, ChirpResponse{
 			ID:        chirp.ID,
 			CreatedAt: chirp.CreatedAt,
 			UpdatedAt: chirp.UpdatedAt,
 			Body:      chirp.Body,
 			UserID:    chirp.UserID,
-		}
+		})
+	}
+	if urlSort == "asc" || urlSort == "" {
+		sort.Slice(responseChirps, func(i, j int) bool {
+			return responseChirps[i].CreatedAt.Before(responseChirps[j].CreatedAt)
+		})
+	} else if urlSort == "desc" {
+		sort.Slice(responseChirps, func(i, j int) bool {
+			return responseChirps[i].CreatedAt.After(responseChirps[j].CreatedAt)
+		})
 	}
 	respondWithJSON(w, 200, responseChirps)
 }

@@ -67,7 +67,7 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 func GetBearerToken(headers http.Header) (string, error) {
 	authValid := headers.Get("Authorization")
 	if authValid == "" {
-		return "", fmt.Errorf("authorization header found")
+		return "", fmt.Errorf("authorization header missing")
 	}
 	const prefix = "Bearer "
 	if !strings.HasPrefix(authValid, prefix) {
@@ -87,4 +87,20 @@ func MakeRefreshToken() (string, error) {
 		return "", fmt.Errorf("could not generate token: %w", err)
 	}
 	return hex.EncodeToString(refreshToken), nil
+}
+
+func GetAPIKey(headers http.Header) (string, error) {
+	authValid := headers.Get("Authorization")
+	if authValid == "" {
+		return "", fmt.Errorf("authorization header missing")
+	}
+	const prefix = "ApiKey "
+	if !strings.HasPrefix(authValid, prefix) {
+		return "", fmt.Errorf("authorization header malformed")
+	}
+	token := strings.TrimSpace(authValid[len(prefix):])
+	if token == "" {
+		return "", fmt.Errorf("token missing")
+	}
+	return token, nil
 }

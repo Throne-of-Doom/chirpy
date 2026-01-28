@@ -2,13 +2,12 @@ package main
 
 import (
 	"database/sql"
-	"log"
-	"net/http"
-	"os"
-
 	"github.com/Throne-of-Doom/chirpy/internal/database"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"log"
+	"net/http"
+	"os"
 )
 
 const filepathRoot = "."
@@ -33,9 +32,11 @@ func main() {
 		log.Fatal("PLATFORM must be set")
 	}
 	secret := os.Getenv("SECRET")
+	apikey := os.Getenv("POLKA_KEY")
 	apiCFG.dbQueries = dbQueries
 	apiCFG.PLATFORM = platform
 	apiCFG.SECRET = secret
+	apiCFG.POLKA_KEY = apikey
 	mux := http.NewServeMux()
 	mux.Handle("/app/", apiCFG.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
 	mux.HandleFunc("GET /api/healthz", readinessHandler)
@@ -50,6 +51,7 @@ func main() {
 	mux.HandleFunc("POST /api/revoke", apiCFG.revokeHandler)
 	mux.HandleFunc("PUT /api/users", apiCFG.UpdateUserHandler)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCFG.deleteChirpsHandler)
+	mux.HandleFunc("POST /api/polka/webhooks", apiCFG.upgradeChirpyHandler)
 
 	srv := &http.Server{
 		Addr:    ":8080",
